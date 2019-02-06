@@ -1,17 +1,15 @@
-import json
 import logging
 import os
 import uuid
-from builtins import KeyError
 
-from logdecorator import log_on_end, log_on_error, log_on_start
+from logdecorator import log_on_start, log_on_end
 
 from qozyd.http.decorator import json_response
 from qozyd.http.exceptions import NotFoundException
-from qozyd.http.response import FileResponse, Response
-from qozyd.models.bridges.exceptions import OfflineException
+from qozyd.http.response import FileResponse
 from qozyd.models.rules import Rule
-from qozyd.utils.package_manager import PackageManager
+
+from qozyd import VERSION
 
 
 logger = logging.getLogger(__name__)
@@ -45,7 +43,7 @@ class QozyController():
     @json_response
     def info(self, request):
         return {
-            "version": "0.1"
+            "version": VERSION
         }
 
 
@@ -316,66 +314,5 @@ class NotificationController():
     def remove(self, request, index):
         notification = self.root.notifications[index]
         self.root.delete_notification(notification)
-
-        return True
-
-
-class PluginController():
-    PYPI_BRIDGE_PLUGIN_CLASSIFIER = "Framework :: Pelican :: Plugins"
-
-    def __init__(self, app_root, plugin_manager):
-        self.root = app_root
-        self.plugin_manager = plugin_manager
-
-    @json_response
-    def available(self, request):
-        package_manager = PackageManager()
-
-        return list(package_manager.get_available_plugins().keys())
-
-    @json_response
-    def plugins(self, request):
-        package_manager = PackageManager()
-
-        return list(package_manager.find_packages_by_classifier(self.PYPI_BRIDGE_PLUGIN_CLASSIFIER))
-
-    @json_response
-    def install(self, request, name, version):
-        logger.info("Plugin installation ({}=={})".format(name, version))
-
-        package_manager = PackageManager()
-
-        try:
-            package_manager.install_package(name, version)
-        except:
-            # self.summary("Failed to install plugin %s (%s)" % (name, version))
-            return False
-
-        # self.summary("Successfully installed plugin %s (%s)" % (name, version))
-
-        return True
-
-    @log_on_error(logging.ERROR, "Couldn't find plugin \"{plugin:s}\"", on_exceptions=KeyError)
-    def plugin(self, request, plugin):
-        plugin_context = self.plugin_manager.plugin_context(plugin)
-
-        # fit request in plugin context
-        fitted_request = plugin_context.fit(request)
-
-        return plugin_context.handle(fitted_request)
-
-    @json_response
-    def remove(self, request, name):
-        logger.info("Plugin removal ({})".format(name))
-
-        package_manager = PackageManager()
-
-        try:
-            package_manager.uninstall_package(name)
-        except:
-            # self.summary("Failed to install plugin %s" % name)
-            return False
-
-        # self.summary("Successfully removed plugin %s" % name)
 
         return True

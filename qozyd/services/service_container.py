@@ -55,6 +55,9 @@ class ServiceContainer():
             "service_container": self
         }
 
+    def _has_own_service(self, service_name):
+        return service_name in self.services or service_name in self.service_definition_dict
+
     def get(self, name):
         if name in self.services:
             return self.services[name]
@@ -63,10 +66,11 @@ class ServiceContainer():
             return self._create_instance(self.service_definition_dict[name])
         
         try:
-            context = self.get("context")
+            if self._has_own_service("context"):
+                context = self.get("context")
 
-            if context.parent:
-                return context.parent.service_container.get(name)
+                if context.parent:
+                    return context.parent.service_container.get(name)
         except ServiceNotFoundException:
             pass
 
@@ -75,7 +79,10 @@ class ServiceContainer():
     @log_on_start(logging.INFO, "Creating Service \"{service_definition.name:s}\"")
     @log_on_error(logging.CRITICAL, "Could not create Service \"{service_definition.name:s}\", required Service \"{e.service_name:s}\" not found.", on_exceptions=ServiceNotFoundException, reraise=True)
     def _create_instance(self, service_definition):
-        service_cls = import_symbol(service_definition.cls)
+        service_cls = service_definition.cls
+
+        if isinstance(service_cls, str):
+            service_cls = import_symbol(service_definition.cls)
 
         service_args = []
 

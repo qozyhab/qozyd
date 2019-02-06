@@ -1,7 +1,7 @@
+import os
 import argparse
 import logging
 
-from ZEO import ClientStorage, connection
 from ZODB import DB
 import transaction
 
@@ -18,9 +18,16 @@ from qozyd.services.service_container import Prototype, Reference, Service, Inst
 logger = logging.getLogger(__name__)
 
 
-def create_db(host, port):
-    storage = ClientStorage.ClientStorage((host, port), server_sync=True)
-    db = DB(storage)
+package_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+
+with open(os.path.join(package_root, "VERSION")) as f:
+    VERSION = f.read()
+
+
+def create_db(database_path):
+    os.makedirs(os.path.basename(database_path), exist_ok=True)
+
+    db = DB(database_path)
 
     return db
 
@@ -47,14 +54,15 @@ def get_app_root(connection):
 def main():
     parser = argparse.ArgumentParser(description="qozyd daemon")
     parser.add_argument("-d", "--debug", dest="debug", action="store_true")
-    parser.add_argument("--db-host", dest="db_host", type=str, default="localhost")
-    parser.add_argument("--db-port", dest="db_port", type=int, default=9999)
+    parser.add_argument("--host", dest="host", type=str, default="localhost")
+    parser.add_argument("--port", dest="port", type=int, default=9876)
+    parser.add_argument("--database", dest="database", type=str, default=os.path.expanduser("~/.qozy/Data.fs"))
 
     options = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if options.debug else logging.INFO, format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s")
 
-    db = create_db(options.db_host, options.db_port,)
+    db = create_db(options.database)
 
     services = (
         # Database
@@ -78,13 +86,12 @@ def main():
         Service("qozyd.controller.RuleController", name="controller.rule", inject=(Reference("app_root"), Reference("transaction_manager"),)),
         Service("qozyd.controller.TriggerController", name="controller.trigger", inject=(Reference("app_root"),)),
         Service("qozyd.controller.NotificationController", name="controller.notification", inject=(Reference("app_root"),)),
-        Service("qozyd.controller.PluginController", name="controller.plugin", inject=(Reference("app_root"), Reference("plugin_manager"),)),
     )
 
     http_context = HttpContext(services, router=QozyRouter())
     http_context.start()
 
-    HttpServer(http_context).start()
+    HttpServer(http_context, options.host, options.port).start()
 
     http_context.stop()
     

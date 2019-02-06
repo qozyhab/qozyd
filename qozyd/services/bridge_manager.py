@@ -32,6 +32,7 @@ class BridgeRunner(threading.Thread):
             except Exception as e:
                 if not self.stopped:
                     logger.error("Bridge \"{bridge.id:s}\" stopped unexpected, restarting in 1 second, reason: {exception:s}".format(bridge=self.bridge, exception=str(e)))
+                    logger.exception(e)
                     time.sleep(1)
 
 
