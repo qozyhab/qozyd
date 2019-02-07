@@ -2,7 +2,6 @@ import re
 import urllib
 
 from .request import Bag, Request
-from http.server import BaseHTTPRequestHandler
 
 from qozyd.http.exceptions import HttpException, NotFoundException
 from qozyd.utils.json import JsonEncoder
@@ -45,6 +44,8 @@ class Route():
 
 
 def http_server_handler(context):
+    from http.server import BaseHTTPRequestHandler
+
     class HTTPRequestHandler(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
             pass

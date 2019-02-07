@@ -12,7 +12,7 @@ class NotificationManager():
         self.zeo_connection = self.db.open()
         self.zeo_connection.sync()
 
-        self.root: Qozy = self.zeo_connection.root()["app_root"]
+        self.root = self.zeo_connection.root()["app_root"]
 
         new_thing_found.append(self.new_thing_found)
 

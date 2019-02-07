@@ -16,13 +16,13 @@ class HttpServer():
     def start(self):
         socketserver.TCPServer.allow_reuse_address = True
 
-        with socketserver.TCPServer((self.host, self.port), http_server_handler(self.context)) as httpd:
-            logger.info("serving at http://{:s}:{:d}".format(self.host, self.port))
+        httpd = socketserver.TCPServer((self.host, self.port), http_server_handler(self.context))
+        logger.info("serving at http://{:s}:{:d}".format(self.host, self.port))
 
-            try:
-                httpd.serve_forever()
-            except KeyboardInterrupt:
-                httpd.shutdown()
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            httpd.shutdown()
 
     def stop(self):
         pass

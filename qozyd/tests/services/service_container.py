@@ -1,5 +1,4 @@
-from qozyd import ServiceContainer, Service, Instance, Prototype, Reference
-from qozyd.services.service_container import ServiceNotFoundException
+from qozyd.services.service_container import ServiceContainer, Service, Instance, Prototype, Reference, ServiceNotFoundException
 from unittest import TestCase
 
 

@@ -30,7 +30,7 @@ setup(
     install_requires=requires,
     entry_points={
         "console_scripts": [
-            "qozyd = qozyd:main",
+            "qozyd = qozyd.main:main",
         ]
     },
     test_suite="qozyd.tests",
