@@ -1,13 +1,24 @@
-from qozyd.utils.color import RGB, HSV, HSL
+from qozyd.utils.color import RGB, HSV, HSL, Color
 from unittest import TestCase
 
 
 class ColorTest(TestCase):
+    def test_baseclasss(self):
+        color = Color()
+
+        with self.assertRaises(NotImplementedError):
+            color.from_rgb(0, 0, 0)
+
+        with self.assertRaises(NotImplementedError):
+            color.rgb()
+
     def test_from_rgb(self):
         color = RGB.from_rgb(255, 255, 0)
         self.assertEqual(color.r, 255)
         self.assertEqual(color.g, 255)
         self.assertEqual(color.b, 0)
+
+        self.assertEqual(color.__json__(), (255, 255, 0))
 
         color = HSV.from_rgb(255, 255, 0)
         self.assertEqual(color.h, 60)

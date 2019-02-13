@@ -72,7 +72,7 @@ class Bridge(Persistent):
     def is_online(self, local_id):
         raise NotImplementedError
 
-    def apply(self, local_id, name, value):
+    def apply(self, thing, channel, value):
         raise NotImplementedError
 
     def __getitem__(self, item):

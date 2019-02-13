@@ -6,7 +6,7 @@ __pycache__/
 *.egg-info/
 
 # Environments
-.virtualenv/
+.virtualenv*/
 
 # IDEs
 .vscode/

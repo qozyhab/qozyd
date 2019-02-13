@@ -1,6 +1,8 @@
 import re
 import urllib
 
+from http.server import BaseHTTPRequestHandler
+
 from .request import Bag, Request
 
 from qozyd.http.exceptions import HttpException, NotFoundException
@@ -43,9 +45,7 @@ class Route():
             return self, matches.groupdict(), matches.string[matches.start():matches.end()]
 
 
-def http_server_handler(context):
-    from http.server import BaseHTTPRequestHandler
-
+def http_server_handler_factory(context):
     class HTTPRequestHandler(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
             pass

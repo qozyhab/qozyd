@@ -2,7 +2,7 @@ import colorsys
 
 
 class Color():
-    @staticmethod
+    @classmethod
     def from_rgb(self, r, g, b):
         raise NotImplementedError
 

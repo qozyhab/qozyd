@@ -6,8 +6,11 @@ def import_symbol(dotted_names, path=None):
     next_module, remaining_names = dotted_names.split('.', 1)
     fp, pathname, description = imp.find_module(next_module, path)
     module = imp.load_module(next_module, fp, pathname, description)
+
     if hasattr(module, remaining_names):
         return getattr(module, remaining_names)
+
     if '.' not in remaining_names:
         return module
+
     return import_symbol(remaining_names, path=module.__path__)

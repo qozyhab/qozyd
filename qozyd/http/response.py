@@ -63,7 +63,7 @@ class FileResponse(BaseResponse):
     def headers(self):
         yield from super().headers
 
-        yield ("Content-Length", str(os.path.getsize(self.file_path)))
+        yield ("Content-Length", os.path.getsize(self.file_path))
 
     def write(self, stream):
         with open(self.file_path, "rb") as file:

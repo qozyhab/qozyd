@@ -232,9 +232,6 @@ class ChannelController():
     def toggle(self, request, thing_id, channel_name):
         return self.root[thing_id].channel(channel_name).toggle()
 
-
-
-
     # @json_response
     # def items(self, request):
     #     return dict(self.root.items)

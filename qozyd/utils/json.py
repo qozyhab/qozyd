@@ -2,6 +2,7 @@ import copy
 
 import json
 import functools
+from collections import OrderedDict
 from datetime import datetime
 
 
@@ -27,13 +28,13 @@ def json_result(func):
 
 class JsonSchema():
     @classmethod
-    def oneOf(cls, *types):
+    def one_of(cls, *types):
         return {
             "oneOf": list(types)
         }
 
     @classmethod
-    def anyOf(cls, *types):
+    def any_of(cls, *types):
         return {
             "anyOf": list(types)
         }
@@ -66,7 +67,7 @@ class JsonSchema():
 
         description = description or object.get("description", None)
         if description:
-            object["description"] = title
+            object["description"] = description
 
         default = default or object.get("default", None)
         if default:
@@ -182,11 +183,11 @@ class ChannelSchema():
         )
     )
 
-    SCHEMA_BY_TYPE = {
-        "Switch": SWITCH_CHANNEL_SCHEMA,
-        "String": STRING_CHANNEL_SCHEMA,
-        "Number": NUMBER_CHANNEL_SCHEMA,
-    }
+    SCHEMA_BY_TYPE = OrderedDict((
+        ("Switch", SWITCH_CHANNEL_SCHEMA),
+        ("String", STRING_CHANNEL_SCHEMA),
+        ("Number", NUMBER_CHANNEL_SCHEMA),
+    ))
 
     @classmethod
     def for_types(cls, types, extend_all=None, extend=None):
@@ -205,9 +206,8 @@ class ChannelSchema():
 
             schemas.append(schema)
 
-        return JsonSchema.anyOf(*schemas)
+        return JsonSchema.any_of(*schemas)
 
     @classmethod
     def all(cls, extend_all=None, extend=None):
         return cls.for_types(cls.SCHEMA_BY_TYPE.keys(), extend_all=extend_all, extend=extend)
-

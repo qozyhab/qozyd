@@ -6,12 +6,6 @@ class ServiceClass():
     def __init__(self, arg):
         self.arg = arg
 
-    def __str__(self):
-        return "ServiceClass({:s})".format(str(self.arg))
-
-    def __repr__(self):
-        return "ServiceClass({:s})".format(repr(self.arg))
-
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.arg == other.arg
 

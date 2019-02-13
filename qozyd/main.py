@@ -7,7 +7,7 @@ import transaction
 
 from functools import partial
 
-from qozyd.context import HttpContext, Context
+from qozyd.context import HttpContext
 from qozyd.http_server import HttpServer
 from qozyd.models import Qozy
 from qozyd.services.router import QozyRouter
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_db(database_path):
-    os.makedirs(os.path.basename(database_path), exist_ok=True)
+    os.makedirs(os.path.dirname(database_path), exist_ok=True)
 
     db = DB(database_path)
 

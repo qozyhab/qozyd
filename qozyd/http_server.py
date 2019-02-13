@@ -1,6 +1,6 @@
 import logging
 import socketserver
-from qozyd.http import http_server_handler
+from qozyd.http import http_server_handler_factory
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class HttpServer():
     def start(self):
         socketserver.TCPServer.allow_reuse_address = True
 
-        httpd = socketserver.TCPServer((self.host, self.port), http_server_handler(self.context))
+        httpd = socketserver.TCPServer((self.host, self.port), http_server_handler_factory(self.context))
         logger.info("serving at http://{:s}:{:d}".format(self.host, self.port))
 
         try:

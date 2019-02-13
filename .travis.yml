@@ -10,3 +10,7 @@ install:
 
 script:
   - python setup.py test
+
+notifications:
+  email:
+    - checks@qozy.io

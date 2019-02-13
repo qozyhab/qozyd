@@ -1,8 +1,14 @@
+import re
+
 import urllib.parse
 
 from qozyd.http.exceptions import NotFoundException
 from qozyd.http.request import Request
 from qozyd.services.service_container import ServiceContainer, Instance
+
+
+class UnfittableException(Exception):
+    pass
 
 
 class Context():
@@ -32,13 +38,17 @@ class HttpContext(Context):
 
     @property
     def path(self):
-        if self.parent:
-            return urllib.parse.urljoin(self.parent.path, self.base_path)
+        if self.parent and isinstance(self.parent, HttpContext):
+            joined_path = "/".join([self.parent.path, self.base_path])
+            joined_path = re.sub(r"/[\/]*/", "/", joined_path)
+
+            return joined_path
 
         return self.base_path
 
     def fit(self, request):
-        assert request.path.startswith(self.path)
+        if not request.path.startswith(self.path):
+            raise UnfittableException("Request can't be fitted unter {:s}".format(self.path))
 
         fitted_path = request.path[len(self.path):]
 
