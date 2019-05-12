@@ -5,12 +5,12 @@ import logging
 from ZODB import DB
 import transaction
 
+from aiohttp import web
+
 from functools import partial
 
 from qozyd.context import HttpContext
-from qozyd.http_server import HttpServer
 from qozyd.models import Qozy
-from qozyd.services.router import QozyRouter
 from qozyd.services.service_container import Reference, Service, Instance
 
 
@@ -58,9 +58,14 @@ def main():
 
     db = create_db(options.database)
 
+    app = web.Application()
+
     services = (
+        # Http
+        Instance(app, name="app"),
+
         # Database
-        Instance(db, name="db", ),
+        Instance(db, name="db"),
         Service("transaction.TransactionManager", name="transaction_manager"),
         Service(create_connection, name="connection",
                 inject=(Reference("db"), Reference("transaction_manager"),)),
@@ -71,33 +76,44 @@ def main():
         Service("qozyd.services.notification_manager.NotificationManager", name="notification_manager",
                 inject=(Reference("db"),)),
         Service("qozyd.services.plugin_manager.PluginManager", name="plugin_manager", inject=(
-        Reference("app_root"), Reference("transaction_manager"), Reference("service_container"),
-        Reference("context"),)),
+            Reference("app"), Reference("app_root"), Reference("transaction_manager"), Reference("service_container"),
+            Reference("context"),)),
         Service("qozyd.services.bridge_manager.BridgeManager", name="bridge_manager",
                 inject=(Reference("app_root"), Reference("transaction_manager"), Reference("connection_factory"),)),
+        Service("qozyd.services.rule_manager.RuleManager", name="rule_manager",
+                inject=(Reference("app_root"), Reference("transaction_manager"), Reference("bridge_manager"),)),
+
+        # Controllers (API)
+        Service("qozyd.controller.api.qozy.QozyController", name="controller.api.qozy"),
+        Service("qozyd.controller.api.bridge.BridgeController", name="controller.api.bridge",
+                inject=(Reference("app_root"), Reference("plugin_manager"), Reference("bridge_manager"), Reference("transaction_manager"),)),
+        Service("qozyd.controller.api.thing.ThingController", name="controller.api.thing",
+                inject=(Reference("app_root"), Reference("transaction_manager"), Reference("bridge_manager"), )),
+        Service("qozyd.controller.api.channel.ChannelController", name="controller.api.channel",
+                inject=(Reference("app_root"), Reference("bridge_manager"),)),
+        Service("qozyd.controller.api.channel_websocket.ChannelWebsocketController", name="controller.api.channel_websocket",
+                inject=(Reference("app_root"),)),
+        Service("qozyd.controller.api.rule.RuleController", name="controller.api.rule",
+                inject=(Reference("app_root"), Reference("transaction_manager"), Reference("bridge_manager"), Reference("rule_manager"),)),
+        Service("qozyd.controller.api.notification.NotificationController", name="controller.api.notification",
+                inject=(Reference("app_root"),)),
 
         # Controllers
-        Service("qozyd.controller.StaticFileController", name="controller.static_file"),
-        Service("qozyd.controller.QozyController", name="controller.qozy"),
-        Service("qozyd.controller.BridgeController", name="controller.bridge",
-                inject=(Reference("app_root"), Reference("plugin_manager"), Reference("transaction_manager"),)),
-        Service("qozyd.controller.ThingController", name="controller.thing",
-                inject=(Reference("app_root"), Reference("transaction_manager"),)),
-        Service("qozyd.controller.ChannelController", name="controller.channel",
-                inject=(Reference("app_root"), Reference("transaction_manager"),)),
-        Service("qozyd.controller.RuleController", name="controller.rule",
-                inject=(Reference("app_root"), Reference("transaction_manager"),)),
-        Service("qozyd.controller.TriggerController", name="controller.trigger", inject=(Reference("app_root"),)),
-        Service("qozyd.controller.NotificationController", name="controller.notification",
-                inject=(Reference("app_root"),)),
+        Service("qozyd.controller.qozy.QozyController", name="controller.qozy"),
     )
 
-    http_context = HttpContext(services, router=QozyRouter())
-    http_context.start()
+    app_context = HttpContext(app, services)
 
-    HttpServer(http_context, options.host, options.port).start()
+    async def app_factory():
+        app_context.start()
 
-    http_context.stop()
+        return app
+
+    web.run_app(app_factory(), port=9876)
+
+    logger.info("Shutting down application")
+
+    app_context.stop()
 
 
 if __name__ == "__main__":

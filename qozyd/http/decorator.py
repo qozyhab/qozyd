@@ -1,21 +1,25 @@
 import json
 import functools
-from qozyd.http.response import Response, JsonResponse
-from qozyd.http.exceptions import HttpException
-from qozyd.utils.json import JsonEncoder
+from functools import partial
+
+from aiohttp import web
+from aiohttp.web_response import Response
+from json import JSONDecodeError
+
+from qozyd.utils.json import JsonEncoder, json_encode
 from jsonschema import validate, ValidationError
 from jsonschema.validators import validator_for
 
 
 def json_response(func):
     @functools.wraps(func)
-    def wrapper_func(*args, **kwargs):
-        controller_result = func(*args, **kwargs)
+    async def wrapper_func(*args, **kwargs):
+        controller_result = await func(*args, **kwargs)
         
         if isinstance(controller_result, Response):
             return controller_result
 
-        return JsonResponse(json.dumps(controller_result, cls=JsonEncoder))
+        return web.json_response(controller_result, dumps=partial(json.dumps, cls=JsonEncoder))
 
     return wrapper_func
 
@@ -23,15 +27,29 @@ def json_response(func):
 def json_validate(schema):
     def decorator(func):
         @functools.wraps(func)
-        def wrapper_func(self, request, *args, **kwargs):
+        async def wrapper_func(self, request, *args, **kwargs):
             try:
-                validate(request.request_json, schema)
+                json_data = None
+
+                try:
+                    json_data = await request.json()
+                except JSONDecodeError:
+                    pass
+
+                validate(json_data, schema)
             except ValidationError:
-                errors = [str(error.message) for error in validator_for(schema)(schema).iter_errors(request.request_json)]
+                json_data = None
 
-                raise HttpException(422, errors)                    
+                try:
+                    json_data = await request.json()
+                except JSONDecodeError:
+                    pass
 
-            return func(self, request, *args, **kwargs)
+                errors = [str(error.message) for error in validator_for(schema)(schema).iter_errors(json_data)]
+
+                raise web.HTTPUnprocessableEntity(text=json_encode(errors), content_type="application/json")
+
+            return await func(self, request, *args, **kwargs)
 
         return wrapper_func
 

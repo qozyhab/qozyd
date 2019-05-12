@@ -1,16 +1,25 @@
-import imp
+import asyncio
+
+import importlib
+import functools
 
 
-def import_symbol(dotted_names, path=None):
-    """ import_from_dotted_path('foo.bar') -> from foo import bar; return bar """
-    next_module, remaining_names = dotted_names.split('.', 1)
-    fp, pathname, description = imp.find_module(next_module, path)
-    module = imp.load_module(next_module, fp, pathname, description)
+def import_symbol(name):
+    components = name.split(".")
 
-    if hasattr(module, remaining_names):
-        return getattr(module, remaining_names)
+    module_path = ".".join(components[:-1])
+    symbol_name = components[-1]
 
-    if '.' not in remaining_names:
-        return module
+    module = importlib.import_module(module_path)
+    symbol = getattr(module, symbol_name)
 
-    return import_symbol(remaining_names, path=module.__path__)
+    return symbol
+
+
+def as_coroutine(f):
+    @functools.wraps(f)
+    def inner(*args, **kwargs):
+        loop = asyncio.get_running_loop()
+        return loop.run_in_executor(None, functools.partial(f, *args, **kwargs))
+
+    return inner

@@ -1,10 +1,11 @@
+from qozyd.context import ContextExecutable
 from qozyd.utils.events import new_thing_found
 from qozyd.models import Qozy
 from qozyd.models.notifications import Notification
 import transaction
 
 
-class NotificationManager():
+class NotificationManager(ContextExecutable):
     def __init__(self, db):
         self.db = db
     

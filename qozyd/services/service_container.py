@@ -27,14 +27,6 @@ class Instance(Definition):
         self.obj = obj
 
 
-class Prototype(Definition):
-    def __init__(self, cls, name, inject=None):
-        super().__init__(name)
-
-        self.cls = cls
-        self.inject = inject or ()
-
-
 class Service(Definition):
     def __init__(self, cls, name, inject=None):
         super().__init__(name)
@@ -49,21 +41,17 @@ Reference = namedtuple("Reference", ["service_name"])
 class ServiceContainer():
     def __init__(self, service_definitions):
         self.service_definitions = service_definitions
-        self.service_definition_dict = {}
 
         self.services = {
             "service_container": self
         }
 
     def _has_own_service(self, service_name):
-        return service_name in self.services or service_name in self.service_definition_dict
+        return service_name in self.services
 
     def get(self, name):
         if name in self.services:
             return self.services[name]
-            
-        if name in self.service_definition_dict and isinstance(self.service_definition_dict[name], Prototype):
-            return self._create_instance(self.service_definition_dict[name])
         
         try:
             if self._has_own_service("context"):
@@ -94,9 +82,6 @@ class ServiceContainer():
 
         service_instance = service_cls(*service_args)
 
-        if hasattr(service_instance, "start"):
-            service_instance.start()
-
         return service_instance
 
     def start(self):
@@ -107,16 +92,5 @@ class ServiceContainer():
                 self.services[service_definition.name] = service
             elif isinstance(service_definition, Instance):
                 self.services[service_definition.name] = service_definition.obj
-            
-            self.service_definition_dict[service_definition.name] = service_definition
-
-    @log_on_start(logging.INFO, "Shutting down Services")
-    def stop(self):
-        for service_name, service in self.services.items():
-            if service is self or service_name == "context":
-                continue
-            
-            logger.info("Stopping {:s}".format(service_name))
-
-            if hasattr(service, "stop"):
-                service.stop()
+            else:
+                raise Exception("Unknown service_definition type ({:s}). Instance of {:s} given.".format(str(service_definition), str(service_definition.__class__)))

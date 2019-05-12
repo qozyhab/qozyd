@@ -1,0 +1,19 @@
+@function breakpoint-infix($name) {
+  @return if($name == "xs", "", "-#{$name}");
+}
+
+@mixin breakpoint-up($name) {
+    $min: map-get($breakpoints, $name);
+
+    @media (min-width: #{$min}) {
+        @content;
+    }
+}
+
+@mixin breakpoint-down($name) {
+    $max: map-get($breakpoints, $name);
+
+    @media (max-width: #{$max - 0.02px}) {
+        @content;
+    }
+}

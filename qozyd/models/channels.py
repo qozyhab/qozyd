@@ -22,13 +22,15 @@ class Channel(Persistent, Storage):
     def id(self):
         return ":".join((self.thing.id, self.name))
 
-    def apply(self, value):
-        if self.sensor:
-            raise Exception("Channel is in sensor mode!")
-
-        self.validate(value)
-
-        self.thing.bridge.apply(self.thing, self, value)
+    # def apply(self, value):
+    #     if self.sensor:
+    #         raise Exception("Channel is in sensor mode!")
+    #
+    #     self.validate(value)
+    #
+    #     self.thing.bridge.apply(self.thing, self, value)
+    #
+    #     return True
 
     @classmethod
     def type_by_name(cls, name):
@@ -56,13 +58,13 @@ class SwitchChannel(Channel):
         self.ensure_valid(isinstance(value, bool), "Value must be of type bool")
 
     def on(self):
-        self.set(True)
+        return self.apply(True)
 
     def off(self):
-        self.set(False)
+        return self.apply(False)
 
     def toggle(self):
-        self.set(not self.value)
+        return self.apply(not self.value)
 
 
 class NumberChannel(Channel):
@@ -85,12 +87,12 @@ class NumberChannel(Channel):
     def increase(self):
         step = self.step or 1
 
-        self.set(self.value + step)
+        return self.apply(self.value + step)
 
     def decrease(self):
         step = self.step or 1
 
-        self.set(self.value - step)
+        return self.apply(self.value - step)
 
 
 class StringChannel(Channel):

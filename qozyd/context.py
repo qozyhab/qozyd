@@ -1,14 +1,23 @@
-import re
+import asyncio
 
-import urllib.parse
-
-from qozyd.http.exceptions import NotFoundException
-from qozyd.http.request import Request
+from qozyd.controller import Controller
 from qozyd.services.service_container import ServiceContainer, Instance
 
 
-class UnfittableException(Exception):
-    pass
+class ContextExecutable():
+    def start(self):
+        raise NotImplementedError()
+
+    def stop(self):
+        pass
+
+
+class AsyncContextExecutable():
+    async def start(self):
+        raise NotImplementedError()
+
+    async def stop(self):
+        pass
 
 
 class Context():
@@ -18,60 +27,43 @@ class Context():
         )
         self.parent = parent
 
+        self.tasks = {}
+
     def start(self):
         self.service_container.start()
+
+        for name, service in self.service_container.services.items():
+            if isinstance(service, ContextExecutable):
+                service.start()
+            elif isinstance(service, AsyncContextExecutable):
+                self.tasks[name] = asyncio.create_task(service.start())
 
         return self
 
     def stop(self):
-        self.service_container.stop()
+        for name, service in self.service_container.services.items():
+            if isinstance(service, ContextExecutable):
+                service.stop()
+            elif isinstance(service, AsyncContextExecutable):
+                service.stop()
+
+                self.tasks[name].cancel()
 
         return self
 
 
 class HttpContext(Context):
-    def __init__(self, services, router, base_path="/", parent=None):
+    def __init__(self, app, services, parent=None):
         super().__init__(services, parent=parent)
 
-        self.router = router
-        self.base_path = base_path
+        self.app = app
 
-    @property
-    def path(self):
-        if self.parent and isinstance(self.parent, HttpContext):
-            joined_path = "/".join([self.parent.path, self.base_path])
-            joined_path = re.sub(r"/[\/]*/", "/", joined_path)
+    def start(self):
+        super().start()
 
-            return joined_path
+        # register controllers
+        for service in self.service_container.services.values():
+            if isinstance(service, Controller):
+                self.app.add_routes(service.routes())
 
-        return self.base_path
-
-    def fit(self, request):
-        if not request.path.startswith(self.path):
-            raise UnfittableException("Request can't be fitted unter {:s}".format(self.path))
-
-        fitted_path = request.path[len(self.path):]
-
-        if len(fitted_path) == 0:
-            fitted_path = "/"
-
-        return Request(request.method, fitted_path, request.headers, request.get, request.request_body)
-
-    def handle(self, request):
-        route_match = self.router.match(request)
-
-        if route_match:
-            route, url_view_args, matched_path = route_match
-            view_service_name, view_method = route.view
-
-            view_args = route.kwargs
-            view_args.update(url_view_args)
-
-            request.matched_path = matched_path
-
-            view_service = self.service_container.get(view_service_name)
-            response = getattr(view_service, view_method)(request, **view_args)
-
-            return response
-
-        raise NotFoundException
+        return self

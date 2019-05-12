@@ -9,39 +9,22 @@ from qozyd.utils.events import new_thing_found
 
 
 class Bridge(Persistent):
-    VENDOR_PREFIX = None
-    SETTINGS_SCHEMA = {}
+    active = True
 
-    _v_stop_event = threading.Event()
-
-    def __init__(self, instance_id):
+    def __init__(self, instance_id, plugin_class):
         self.instance_id = instance_id
         self.things = PersistentMapping()
         self.settings = PersistentMapping()
-
-        self._v_stop_event = threading.Event()
+        self.plugin_class = plugin_class
+        self.active = True
 
     @property
     def id(self):
-        return ":".join(("bridge", self.VENDOR_PREFIX, self.instance_id))
-
-    @property
-    def active(self):
-        return self.settings != {}
-
-    def start(self, connection):
-        raise NotImplementedError()
-
-    @property
-    def stopped(self):
-        return self._v_stop_event.is_set()
-
-    def stop(self):
-        self._v_stop_event.set()
+        return ":".join(("bridge", self.plugin_class.VENDOR_PREFIX, self.instance_id))
 
     def set_settings(self, settings):
         try:
-            jsonschema.validate(settings, self.SETTINGS_SCHEMA)
+            jsonschema.validate(settings, self.plugin_class.SETTINGS_SCHEMA)
             self.settings.clear()
             self.settings.update(settings)
             self._p_changed = True
@@ -52,8 +35,7 @@ class Bridge(Persistent):
             
     def add_thing(self, thing):
         if thing.id in self.things:
-            self.update_state(self.things[thing.id])
-            return
+            return False
 
         # call event
         new_thing_found(thing)
@@ -62,18 +44,11 @@ class Bridge(Persistent):
 
         self.things[thing.id] = thing
 
+        return True
+
     def remove_thing(self, thing):
         del self.things[thing.id]
         thing.bridge = None
-
-    def scan(self):
-        raise NotImplementedError
-
-    def is_online(self, local_id):
-        raise NotImplementedError
-
-    def apply(self, thing, channel, value):
-        raise NotImplementedError
 
     def __getitem__(self, item):
         return self.things[item]
@@ -81,10 +56,10 @@ class Bridge(Persistent):
     def __json__(self):
         return {
             "id": self.id,
-            "active": self.active,
-            "vendorPrefix": self.VENDOR_PREFIX,
+            "vendorPrefix": self.plugin_class.VENDOR_PREFIX,
             "instanceId": self.instance_id,
-            "settingsSchema": self.SETTINGS_SCHEMA,
+            "settingsSchema": self.plugin_class.SETTINGS_SCHEMA,
             "settings": dict(self.settings),
+            "active": self.active,
             "things": dict(self.things),
         }

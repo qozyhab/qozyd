@@ -1,7 +1,6 @@
 import os
 from setuptools import setup, find_packages
 
-
 here = os.path.abspath(os.path.dirname(__file__))
 
 with open(os.path.join(here, "README.md")) as f:
@@ -14,6 +13,7 @@ requires = [
     "ZODB",
     "jsonschema",
     "logdecorator",
+    "aiohttp",
 ]
 
 setup(
@@ -21,9 +21,9 @@ setup(
     version=VERSION,
     description="qozyd",
     long_description=README,
-    author="",
-    author_email="",
-    url="",
+    author="qozy.io",
+    author_email="contact@qozy.io",
+    url="https://www.qozy.io",
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -33,5 +33,4 @@ setup(
             "qozyd = qozyd.main:main",
         ]
     },
-    test_suite="qozyd.tests",
 )

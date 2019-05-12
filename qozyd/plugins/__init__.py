@@ -1,19 +1,17 @@
-from qozyd.http import Router
+from aiohttp import web
+
 from qozyd.services.service_container import Instance
-from qozyd.context import HttpContext
+from qozyd.context import HttpContext, Context
 
 
 class PluginContextBuilder():
     def services(self):
-        pass
+        return tuple()
 
-    def routes(self):
-        pass
+    def create(self, app_root, parent_context: Context = None) -> HttpContext:
+        app = web.Application()
 
-    def create(self, app_root, base_path="/", parent_context=None):
         plugin_services = (Instance(app_root, name="plugin_root"),)
         plugin_services += tuple(self.services() or ())
 
-        plugin_router = Router(self.routes() or ())
-
-        return HttpContext(plugin_services, router=plugin_router, base_path=base_path, parent=parent_context)
+        return HttpContext(app, plugin_services, parent=parent_context)

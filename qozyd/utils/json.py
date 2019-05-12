@@ -18,10 +18,18 @@ class JsonEncoder(json.JSONEncoder):
             return super().default(obj)
 
 
+def json_encode(obj):
+    return json.dumps(obj, cls=JsonEncoder)
+
+
+def json_decode(string):
+    return json.loads(string)
+
+
 def json_result(func):
     @functools.wraps(func)
     def wrapper_func(*args, **kwargs):
-        return json.dumps(func(*args, **kwargs), cls=JsonEncoder)
+        return json_encode(func(*args, **kwargs))
 
     return wrapper_func
 
@@ -88,9 +96,9 @@ class JsonSchema():
         return object
 
     @classmethod
-    def type(cls, type, title=None, description=None, default=None, examples=None):
+    def type(cls, type, nullable=False, title=None, description=None, default=None, examples=None):
         result = {
-            "type": type
+            "type": type if not nullable else [type, "null"]
         }
 
         if title:
@@ -114,12 +122,20 @@ class JsonSchema():
         }
 
     @classmethod
-    def string(cls, title=None, description=None, default=None, examples=None):
-        return cls.type("string", title=title, description=description, default=default, examples=examples)
+    def string(cls, nullable=False, min_length=None, max_length=None, title=None, description=None, default=None, examples=None):
+        result = cls.type("string", nullable=nullable, title=title, description=description, default=default, examples=examples)
+
+        if min_length:
+            result["minLength"] = min_length
+
+        if max_length:
+            result["maxLength"] = max_length
+
+        return result
 
     @classmethod
-    def integer(cls, minimum=None, maximum=None, title=None, description=None, default=None, examples=None):
-        result = cls.type("integer", title=title, description=description, default=default, examples=examples)
+    def integer(cls, nullable=False, minimum=None, maximum=None, title=None, description=None, default=None, examples=None):
+        result = cls.type("integer", nullable=nullable, title=title, description=description, default=default, examples=examples)
 
         if minimum:
             result["minimum"] = minimum
@@ -130,8 +146,8 @@ class JsonSchema():
         return result
 
     @classmethod
-    def number(cls, minimum=None, maximum=None, title=None, description=None, default=None, examples=None):
-        result = cls.type("number", title=title, description=description, default=default, examples=examples)
+    def number(cls, nullable=False, minimum=None, maximum=None, title=None, description=None, default=None, examples=None):
+        result = cls.type("number", nullable=nullable, title=title, description=description, default=default, examples=examples)
 
         if minimum:
             result["minimum"] = minimum
@@ -142,9 +158,15 @@ class JsonSchema():
         return result
 
     @classmethod
-    def array(cls, items, title=None, description=None, default=None, examples=None):
-        result = cls.type("array", title=title, description=description, default=default, examples=examples)
+    def array(cls, items, nullable=False, min_items=None, max_items=None, title=None, description=None, default=None, examples=None):
+        result = cls.type("array", nullable=nullable, title=title, description=description, default=default, examples=examples)
         result["items"] = items
+
+        if min_items:
+            result["minItems"] = min_items
+
+        if max_items:
+            result["maxItems"] = max_items
 
         return result
 
@@ -152,8 +174,9 @@ class JsonSchema():
 class ChannelSchema():
     BASE_CHANNEL_SCHEMA = JsonSchema.object(
         properties=JsonSchema.properties(
-            channel=JsonSchema.string(title="Channel name"),
-        )
+            channel=JsonSchema.string(title="Channel name", min_length=1),
+        ),
+        required=["channel",]
     )
 
     SWITCH_CHANNEL_SCHEMA = JsonSchema.extend(
@@ -161,7 +184,8 @@ class ChannelSchema():
         title="Switch",
         properties=JsonSchema.properties(
             type=JsonSchema.const("Switch"),
-        )
+        ),
+        required=["type",]
     )
 
     STRING_CHANNEL_SCHEMA = JsonSchema.extend(
@@ -169,7 +193,8 @@ class ChannelSchema():
         title="String",
         properties=JsonSchema.properties(
             type=JsonSchema.const("String"),
-        )
+        ),
+        required=["type",]
     )
 
     NUMBER_CHANNEL_SCHEMA = JsonSchema.extend(
@@ -180,7 +205,8 @@ class ChannelSchema():
             min=JsonSchema.number(title="Min"),
             max=JsonSchema.number(title="Max"),
             step=JsonSchema.number(title="Step"),
-        )
+        ),
+        required=["type",]
     )
 
     SCHEMA_BY_TYPE = OrderedDict((

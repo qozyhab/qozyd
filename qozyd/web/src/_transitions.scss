@@ -1,0 +1,27 @@
+/*
+ * Modal
+ */
+.modal-enter {
+    opacity: 0;
+}
+
+.modal-leave-active {
+    opacity: 0;
+}
+
+.modal-enter .modal,
+.modal-leave-active .modal {
+    -webkit-transform: scale(1.1);
+    transform: scale(1.1);
+}
+
+
+/*
+ * Fade
+ */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}

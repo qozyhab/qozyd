@@ -1,0 +1,54 @@
+nav.navbar {
+    background-color: color(primary);
+    color: #ECEFF1;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+
+    margin-bottom: 1.5rem;
+
+    > .brand {
+      margin: 5px;
+      height: 55px;
+    }
+
+  > ul.menu {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow: auto;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    > li {
+      height: 100%;
+
+      > a {
+        height: 100%;
+        color: #fff;
+        text-decoration: none;
+
+        padding: 0 20px;
+
+        display: flex;
+        align-items: center;
+
+        background-color: color(primary);
+        border-bottom: 4px solid transparent;
+
+        transition: all ease-in-out 200ms;
+
+        &.router-link-active {
+          border-bottom: 4px solid color(highlight-2);
+        }
+
+        &:hover {
+          border-bottom: 4px solid color(highlight);
+          background-color: lighten(color(primary), 5%);
+        }
+      }
+    }
+  }
+}

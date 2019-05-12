@@ -1,0 +1,28 @@
+ul.menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    &.vertical {
+        > li {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e4e4e4;
+
+            transition: background-color ease-in-out 150ms;
+
+            &:hover {
+                background-color: #f1f1f1;
+            }
+        }
+    }
+
+    &.horizontal {
+        > li {
+            display: inline-block;
+        }
+    }
+
+    > li {
+        cursor: pointer;
+    }
+}

@@ -11,19 +11,10 @@ class Qozy(Persistent):
         self.rules = PersistentMapping()
         self.notifications = PersistentList()
         self.plugins = PersistentMapping()
-        self._triggers = {}
-
-        self._add_trigger(Trigger("started"))
 
     @property
     def id(self):
         return "system"
-
-    def _add_trigger(self, trigger):
-        self._triggers[trigger.event_name] = trigger
-
-    def trigger(self, event_name):
-        return self._triggers[event_name]
 
     def add_bridge(self, bridge):
         self.bridges[bridge.id] = bridge
@@ -43,25 +34,13 @@ class Qozy(Persistent):
             for thing in bridge.things.values():
                 yield thing.id, thing
 
-    @property
-    def items(self):
+    def thing(self, thing_id):
         for bridge in self.bridges.values():
             for thing in bridge.things.values():
-                for item in thing.items.values():
-                    yield item.id, item
+                if thing.id == thing_id:
+                    return thing
 
-    @property
-    def triggers(self):
-        for trigger in self._triggers.values():
-            yield trigger.id, trigger
-
-        for _, thing in self.things:
-            for trigger in thing.triggers.values():
-                yield trigger.id, trigger
-
-            for item in thing.items.values():
-                for trigger in item.triggers.values():
-                    yield trigger.id, trigger
+        return None
 
     def add_notification(self, notification):
         self.notifications.insert(0, notification)
@@ -83,8 +62,6 @@ class Qozy(Persistent):
             return self.bridges[item]
         elif item.startswith("thing:"):
             return dict(self.things)[item]
-        elif item.startswith("item:"):
-            return dict(self.items)[item]
 
         raise KeyError
 
@@ -93,43 +70,8 @@ class Qozy(Persistent):
             "bridges": dict(self.bridges),
             "things": dict(self.things),
             "rules": dict(self.rules),
-            "triggers": dict(self.triggers),
             "notifications": list(self.notifications),
         }
-
-
-class Trigger(Persistent):
-    __parent__ = None
-
-    def __init__(self, event_name):
-        self.event_name = event_name
-        self.rules = PersistentList()
-
-    @property
-    def id(self):
-        return ":".join(("trigger", self.__parent__.id, self.event_name))
-
-    def add_rule(self, rule):
-        self.rules.append(rule)
-
-    def delete_rule(self, rule):
-        self.rules.remove(rule)
-
-    @property
-    def __name__(self):
-        return self.id
-
-    def fire(self):
-        for rule in self.rules:
-            rule.execute()
-
-    def __json__(self):
-        return {
-            "id": self.id,
-            "eventName": self.event_name,
-            "parent": self.__parent__.id
-        }
-
 
 class HistoricalValue(Persistent):
     def __init__(self, value):
