@@ -1,8 +1,13 @@
+import logging
 from aiohttp import web
+from logdecorator import log_on_start
 
 from qozyd.context import ContextExecutable
 
 import pkg_resources
+
+
+logger = logging.getLogger()
 
 
 class PluginManager(ContextExecutable):
@@ -44,20 +49,25 @@ class PluginManager(ContextExecutable):
 
     def start(self):
         for plugin_name, plugin_class in self.plugins().items():
-            plugin = plugin_class()
+            self.start_plugin(plugin_name, plugin_class)
 
-            with self.transaction_manager:
-                plugin_store = self.app_root.get_or_create_plugin_store(plugin_name)
+    @log_on_start(logging.INFO, "Starting plugin {plugin_name:s}")
+    def start_plugin(self, plugin_name, plugin_class):
+        plugin = plugin_class()
 
-            base_path = "/plugins/{:s}".format(plugin_name)
+        with self.transaction_manager:
+            plugin_store = self.app_root.get_or_create_plugin_store(plugin_name)
 
-            plugin_context = plugin.create(plugin_store, parent_context=self.context)
+        base_path = "/{:s}".format(plugin_name)
 
-            self.plugin_contexts[plugin_name] = plugin_context
+        plugin_context = plugin.create(plugin_store, parent_context=self.context)
 
-            plugin_context.start()
+        self.plugin_contexts[plugin_name] = plugin_context
 
-            self.app.add_subapp(base_path, plugin_context.app)
+        plugin_context.start()
+        logger.info("Started ")
+
+        self.app.add_subapp(base_path, plugin_context.app)
 
     def stop(self):
         for plugin_context in self.plugin_contexts.values():

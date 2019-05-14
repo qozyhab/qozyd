@@ -28,6 +28,9 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,
+    extras_require={
+        "full": ["qozy-ui", "qozy-client", "qozy-ssh", "qozy-wifiled"]
+    },
     entry_points={
         "console_scripts": [
             "qozyd = qozyd.main:main",

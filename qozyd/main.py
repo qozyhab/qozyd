@@ -97,9 +97,6 @@ def main():
                 inject=(Reference("app_root"), Reference("transaction_manager"), Reference("bridge_manager"), Reference("rule_manager"),)),
         Service("qozyd.controller.api.notification.NotificationController", name="controller.api.notification",
                 inject=(Reference("app_root"),)),
-
-        # Controllers
-        Service("qozyd.controller.qozy.QozyController", name="controller.qozy"),
     )
 
     app_context = HttpContext(app, services)

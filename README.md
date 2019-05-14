@@ -12,7 +12,7 @@ qozy is a software for home automation, it enables a manufacturer-independent co
 ## Installation
 
 ```sh
-$ pip install --index-url https://pypi.qozy.io qozyd
+$ pip install --index-url https://pypi.qozy.io "qozyd[full]"
 ```
 
 ## Usage
@@ -21,7 +21,7 @@ $ pip install --index-url https://pypi.qozy.io qozyd
 $ qozyd
 ```
 
-Open `http://localhost:9876`in your browser.
+Open `http://localhost:9876/ui/`in your browser.
 
 ## Overview
 
