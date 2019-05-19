@@ -6,7 +6,7 @@ from qozyd.services.service_container import ServiceContainer, Instance
 
 class ContextExecutable():
     def start(self):
-        raise NotImplementedError()
+        pass
 
     def stop(self):
         pass
@@ -14,7 +14,7 @@ class ContextExecutable():
 
 class AsyncContextExecutable():
     async def start(self):
-        raise NotImplementedError()
+        pass
 
     async def stop(self):
         pass
@@ -27,27 +27,23 @@ class Context():
         )
         self.parent = parent
 
-        self.tasks = {}
-
-    def start(self):
+    async def start(self):
         self.service_container.start()
 
         for name, service in self.service_container.services.items():
             if isinstance(service, ContextExecutable):
                 service.start()
             elif isinstance(service, AsyncContextExecutable):
-                self.tasks[name] = asyncio.create_task(service.start())
+                await service.start()
 
         return self
 
-    def stop(self):
+    async def stop(self):
         for name, service in self.service_container.services.items():
             if isinstance(service, ContextExecutable):
                 service.stop()
             elif isinstance(service, AsyncContextExecutable):
-                service.stop()
-
-                self.tasks[name].cancel()
+                await service.stop()
 
         return self
 
@@ -58,8 +54,8 @@ class HttpContext(Context):
 
         self.app = app
 
-    def start(self):
-        super().start()
+    async def start(self):
+        await super().start()
 
         # register controllers
         for service in self.service_container.services.values():

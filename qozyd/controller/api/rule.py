@@ -21,6 +21,11 @@ class RuleController(Controller):
 
     @json_response
     async def rules(self, request):
+        expand = request.query.getone("expand", False)
+
+        if expand:
+            return dict(self.root.rules)
+
         return list(self.root.rules.keys())
 
     @json_response
@@ -66,7 +71,7 @@ class RuleController(Controller):
 
     @json_response
     # @log_on_end(logging.INFO, "Added new rule with id \"{result:s}\"", logger=logger)
-    async def add_script_rule(self, request):
+    async def add_rule(self, request):
         rule = ScriptRule(str(uuid.uuid4()), self.root)
 
         with self.transaction_manager:
@@ -91,6 +96,6 @@ class RuleController(Controller):
             web.get("/api/rules/{rule_id}/condition", self.rule_condition),
             web.get("/api/rules/{rule_id}/execute", self.rule_execute),
             web.patch("/api/rules/{rule_id}", self.patch_rule),
-            web.post("/api/rules/script", self.add_script_rule),
+            web.post("/api/rules", self.add_rule),
             web.delete("/api/rules/{rule_id}", self.remove_rule)
         ]

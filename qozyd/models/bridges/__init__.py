@@ -33,12 +33,12 @@ class Bridge(Persistent):
         except jsonschema.ValidationError:
             raise
             
-    def add_thing(self, thing):
+    async def add_thing(self, thing):
         if thing.id in self.things:
             return False
 
         # call event
-        new_thing_found(thing)
+        await new_thing_found(thing)
 
         thing.bridge = self
 

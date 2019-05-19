@@ -1,3 +1,4 @@
+import asyncio
 import os
 import argparse
 import logging
@@ -99,18 +100,21 @@ def main():
                 inject=(Reference("app_root"),)),
     )
 
+    async def shutdown(app):
+        logger.info("Shutting down application")
+
+        await app_context.stop()
+
+    app.on_shutdown.append(shutdown)
+
     app_context = HttpContext(app, services)
 
     async def app_factory():
-        app_context.start()
+        await app_context.start()
 
         return app
 
     web.run_app(app_factory(), port=9876)
-
-    logger.info("Shutting down application")
-
-    app_context.stop()
 
 
 if __name__ == "__main__":

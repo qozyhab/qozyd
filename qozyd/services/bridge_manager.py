@@ -75,17 +75,14 @@ class BridgeManager(AsyncContextExecutable):
         self.connection_factory = connection_factory
 
         self.running_bridges: Dict[str, BridgeRunner] = {}
-        self.stop_event = threading.Event()
+        self.watch_task = None
 
-    def stop(self):
-        self.stop_event.set()
+    async def stop(self):
+        if self.watch_task is not None:
+            self.watch_task.cancel()
 
         for bridge_runner in self.running_bridges.values():
             bridge_runner.stop()
-
-    @property
-    def stopped(self):
-        return self.stop_event.is_set()
 
     @log_on_start(logging.INFO, "Starting Bridge \"{bridge.id:s}\"")
     def start_bridge(self, bridge):
@@ -110,7 +107,7 @@ class BridgeManager(AsyncContextExecutable):
         for bridge_runner in self.running_bridges.values():
             with self.transaction_manager:
                 async for thing in bridge_runner.bridge_plugin.scan():
-                    if bridge_runner.bridge.add_thing(thing):
+                    if await bridge_runner.bridge.add_thing(thing):
                         logger.info(f"New thing found {thing.id} via bridge {bridge_runner.bridge.id}")
                         new_things += 1
 
@@ -141,8 +138,8 @@ class BridgeManager(AsyncContextExecutable):
     def is_active(self, bridge: Bridge):
         return bridge in self.active_bridges.values()
 
-    async def start(self):
-        while not self.stopped:
+    async def watch_bridges(self):
+        while True:
             # run all active bridges
             available_bridges = self.active_bridges
 
@@ -157,3 +154,6 @@ class BridgeManager(AsyncContextExecutable):
                     self.start_bridge(bridge)
 
             await asyncio.sleep(1)
+
+    async def start(self):
+        self.watch_task = asyncio.create_task(self.watch_bridges())
